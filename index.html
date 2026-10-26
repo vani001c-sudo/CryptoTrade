@@ -771,42 +771,31 @@ function renderTradeHistory(){const el=document.getElementById('tradeHistoryList
 const chartCache={};function drawChart(){const c=document.getElementById('chart');if(!c)return;const ctx=c.getContext('2d'),w=c.width,h=c.height;ctx.clearRect(0,0,w,h);ctx.strokeStyle='#293246';ctx.lineWidth=1;for(let i=1;i<5;i++){let y=i*h/5;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}let m=getMarket(selectedPair),v=m.price;const bucket=Math.floor(Date.now()/600000),cacheKey=selectedPair+'-'+bucket;let candles=chartCache[cacheKey];if(!candles){candles=[];for(let i=0;i<58;i++){let change=(Math.random()-.51)*v*.008;let open=v;v=Math.max(v+change,v*.7);let close=v;let high=Math.max(open,close)+Math.random()*v*.002,low=Math.min(open,close)-Math.random()*v*.002;candles.push({open,close,high,low})}chartCache[cacheKey]=candles}let max=Math.max(...candles.map(x=>x.high)),min=Math.min(...candles.map(x=>x.low)),range=max-min||1;const y=p=>h-12-(p-min)/range*(h-24),step=w/candles.length; candles.forEach((d,i)=>{let x=i*step+step/2,up=d.close>=d.open;ctx.strokeStyle=up?'#36d6a3':'#e65b70';ctx.fillStyle=ctx.strokeStyle;ctx.beginPath();ctx.moveTo(x,y(d.high));ctx.lineTo(x,y(d.low));ctx.stroke();let top=y(Math.max(d.open,d.close)),bottom=y(Math.min(d.open,d.close));ctx.fillRect(x-step*.28,top,step*.56,Math.max(2,bottom-top))});ctx.fillStyle='#c7cede';ctx.font='12px Arial';ctx.fillText('SIMULATED · '+timeframe,8,16)}function setTimeframe(t,btn){timeframe=t;document.querySelectorAll('#timeframes button').forEach(b=>b.classList.toggle('selected',b===btn));drawChart()}
 function openManagerLogin(){managerLoginMode=true;isRegister=false;showPage('login');document.getElementById('authTitle').textContent='Manager Login';document.getElementById('accountLabel').textContent='Manager Username';document.getElementById('account').placeholder='Enter manager username';document.getElementById('password').placeholder='Enter manager password';document.getElementById('confirmBox').style.display='none';document.getElementById('toggleAuthBtn').textContent='Back to User Login';if(document.getElementById('managerLoginBtn'))document.getElementById('managerLoginBtn').style.display='none';document.getElementById('authMessage').textContent='';}
 function resetUserLogin(){managerLoginMode=false;isRegister=false;document.getElementById('authTitle').textContent='Login';document.getElementById('accountLabel').textContent='Account ID / Username';document.getElementById('account').placeholder='Enter Account ID or username';document.getElementById('password').placeholder='Enter password';document.getElementById('confirmBox').style.display='none';document.getElementById('toggleAuthBtn').textContent='New here? Register';if(document.getElementById('managerLoginBtn'))document.getElementById('managerLoginBtn').style.display='none';document.getElementById('authMessage').textContent='';}
-function toggleAuth(){if(managerLoginMode){resetUserLogin();document.getElementById('authMessage').textContent='';return;}isRegister=!isRegister;document.getElementById('authTitle').textContent=isRegister?'Register':'Login';document.getElementById('accountLabel').textContent='Account ID / Username';document.getElementById('account').placeholder=isRegister?'Choose a unique Account ID':'Enter Account ID or username';document.getElementById('confirmBox').style.display=isRegister?'block':'none';document.getElementById('toggleAuthBtn').textContent=isRegister?'Already registered? Login':'New here? Register';if(document.getElementById('managerLoginBtn'))if(document.getElementById('managerLoginBtn'))document.getElementById('managerLoginBtn').style.display='none';document.getElementById('authMessage').textContent=''}async function submitAuth(){const account=document.getElementById('account').value.trim(),password=document.getElementById('password').value,msg=document.getElementById('authMessage');if(!account||!password){msg.textContent='Enter username and password.';return}let users=readJSON('dc_users',{});if(!isRegister&&account.toLowerCase()===MANAGER_USERNAME.toLowerCase()&&password===MANAGER_PASSWORD){managerSession=true;currentUser='';localStorage.removeItem('dc_user');msg.textContent='';showPage('manager');return}if(isRegister&&account.toLowerCase()===MANAGER_USERNAME.toLowerCase()){msg.textContent='This username is reserved.';return}if(isRegister){if(password.length<4){msg.textContent='Use at least 4 characters for your password.';return}if(password!==document.getElementById('confirmPassword').value){msg.textContent='Passwords do not match.';return}if(Object.keys(users).some(name=>name.toLowerCase()===account.toLowerCase())){msg.textContent='Username already exists.';return}let next=Number(localStorage.getItem('dc_next_id')||6001);const inviteField=document.getElementById('inviteCodeInput');
-let inviteCode=(inviteField?.value||'').trim().toUpperCase();
-let invitedBy='';
-if(inviteCode){
- const inviter=Object.keys(users).find(n=>String(users[n].inviteCode||('CT'+users[n].demoId)).toUpperCase()===inviteCode);
- if(!inviter){msg.textContent='That invite code was not found. Check it or leave the field blank.';return;}
- if(inviter.toLowerCase()===account.toLowerCase()){msg.textContent='You cannot use your own invite code.';return;}
- invitedBy=inviter;
-}
-/* Sync non-sensitive registration metadata to the shared Supabase database.
-   Passwords are deliberately NOT sent to this table. */
-if(window.cryptoTradeSupabase){
-  const { error: registrationSyncError } = await window.cryptoTradeSupabase
-    .from('registrations')
-    .insert([{ username: account, invite_code: inviteCode || null }]);
-  if(registrationSyncError){
-    if(registrationSyncError.code === '23505'){
-      msg.textContent = 'This username is already registered.';
-    } else if(registrationSyncError.code === '42501'){
-      msg.textContent = 'Registration database permission is not configured yet. Please contact the site manager.';
-    } else {
-      msg.textContent = 'Could not save registration online. Please try again.';
-    }
-    return;
+function toggleAuth(){if(managerLoginMode){resetUserLogin();document.getElementById('authMessage').textContent='';return;}isRegister=!isRegister;document.getElementById('authTitle').textContent=isRegister?'Register':'Login';document.getElementById('accountLabel').textContent='Account ID / Username';document.getElementById('account').placeholder=isRegister?'Choose a unique Account ID':'Enter Account ID or username';document.getElementById('confirmBox').style.display=isRegister?'block':'none';document.getElementById('toggleAuthBtn').textContent=isRegister?'Already registered? Login':'New here? Register';if(document.getElementById('managerLoginBtn'))if(document.getElementById('managerLoginBtn'))document.getElementById('managerLoginBtn').style.display='none';document.getElementById('authMessage').textContent=''}async function submitAuth(){
+ const account=document.getElementById('account').value.trim(),password=document.getElementById('password').value,msg=document.getElementById('authMessage');
+ if(!account||!password){msg.textContent='Enter username and password.';return;}
+ const btn=document.querySelector('#login button[type="submit"],button[onclick="submitAuth()"]');if(btn)btn.disabled=true;
+ try{
+  if(managerLoginMode){
+   const data=await ctApi('/api/manager/login',{method:'POST',body:JSON.stringify({username:account,password})});
+   localStorage.setItem('ct_manager_token',data.token);managerSession=true;currentUser='';localStorage.removeItem('dc_user');msg.textContent='';showPage('manager');await renderManager();return;
   }
-} else {
-  msg.textContent = 'Database connection is unavailable. Please refresh and try again.';
-  return;
+  if(isRegister){
+   if(password.length<8){msg.textContent='Use at least 8 characters for your password.';return;}
+   if(password!==document.getElementById('confirmPassword').value){msg.textContent='Passwords do not match.';return;}
+   if(account.toLowerCase()===MANAGER_USERNAME.toLowerCase()){msg.textContent='This username is reserved.';return;}
+   const inviteCode=(document.getElementById('inviteCodeInput')?.value||'').trim().toUpperCase();
+   const data=await ctApi('/api/register',{method:'POST',body:JSON.stringify({username:account,password,inviteCode})});
+   const u=data.user;let users=readJSON('dc_users',{});users[u.username]={password:'',demoId:u.id,status:u.status,creditScore:u.creditScore,registeredAt:u.registeredAt,inviteCode:u.inviteCode,invitedBy:u.invitedBy};localStorage.setItem('dc_users',JSON.stringify(users));
+   isRegister=false;document.getElementById('authTitle').textContent='Login';document.getElementById('confirmBox').style.display='none';document.getElementById('toggleAuthBtn').textContent='New here? Register';msg.textContent='Registration successful! Your demo User ID is '+u.id+'. Please log in.';return;
+  }
+  const data=await ctApi('/api/login',{method:'POST',body:JSON.stringify({username:account,password})});
+  localStorage.setItem('ct_user_token',data.token);const u=data.user;let users=readJSON('dc_users',{});users[u.username]={...(users[u.username]||{}),password:'',demoId:u.id,status:u.status,creditScore:u.creditScore,registeredAt:u.registeredAt,inviteCode:u.inviteCode,invitedBy:u.invitedBy};localStorage.setItem('dc_users',JSON.stringify(users));
+  currentUser=u.username;localStorage.setItem('dc_user',currentUser);demoBalance=Number(u.demoBalance)||0;localStorage.setItem('user:'+encodeURIComponent(currentUser)+':dc_demo_balance',String(demoBalance));activeCycle=readJSON('dc_active_cycle',null);tradeHistory=readJSON('dc_history',[]);notifications=readJSON('dc_notifications',['Practice account: prices and trading results are simulated.']);updateProfile();updateHeaderAuth();msg.textContent='Login successful!';notifications.unshift('Welcome back, '+u.username+'.');save('dc_notifications',notifications);setTimeout(()=>showPage('profile'),400);
+ }catch(e){msg.textContent=e.message||'Could not connect to the online database. Please try again.';}
+ finally{if(btn)btn.disabled=false;}
 }
-users[account]={password,demoId:next,status:'Active',creditScore:100,registeredAt:new Date().toISOString(),inviteCode:'CT'+next,invitedBy};
-localStorage.setItem('dc_next_id',String(next+1));save('dc_users',users);
-let events=[];try{events=JSON.parse(localStorage.getItem('dc_manager_events')||'[]')}catch(e){}
-events.unshift({type:'registration',username:account,demoId:next,time:new Date().toISOString(),invitedBy});
-localStorage.setItem('dc_manager_events',JSON.stringify(events.slice(0,100)));
-if(invitedBy){let inviteEvents=[];try{inviteEvents=JSON.parse(localStorage.getItem('dc_invite_events')||'[]')}catch(e){}inviteEvents.unshift({inviter:invitedBy,username:account,demoId:next,time:new Date().toISOString()});localStorage.setItem('dc_invite_events',JSON.stringify(inviteEvents.slice(0,200)));}
-isRegister=false;document.getElementById('authTitle').textContent='Login';document.getElementById('confirmBox').style.display='none';document.getElementById('toggleAuthBtn').textContent='New here? Register';msg.textContent='Registration successful! Your demo User ID is '+next+'. Please log in.';return}const storedName=Object.keys(users).find(name=>name.toLowerCase()===account.toLowerCase());if(!storedName||users[storedName].password!==password){msg.textContent='Account not found or password is incorrect.';return}if(users[storedName].status==='Frozen'){msg.textContent='This demo account is frozen. Please contact the manager.';return}if(users[storedName].status==='Inactive'){msg.textContent='This account is inactive. Please contact the manager.';return}currentUser=storedName;localStorage.setItem('dc_user',currentUser);demoBalance=Number(localStorage.getItem(scopedStorageKey('dc_demo_balance'))||0);activeCycle=readJSON('dc_active_cycle',null);tradeHistory=readJSON('dc_history',[]);notifications=readJSON('dc_notifications',['Practice account: prices and trading results are simulated.']);updateProfile();updateHeaderAuth();msg.textContent='Login successful!';notifications.unshift('Welcome back, '+account+'.');save('dc_notifications',notifications);setTimeout(()=>showPage('profile'),400)}function updateProfile(){const users=readJSON('dc_users',{}),u=users[currentUser];document.getElementById('profileName').textContent=currentUser||'Guest';document.getElementById('profileId').textContent=u?u.demoId:'Not logged in';const scoreEl=document.getElementById('creditScoreValue');if(scoreEl)scoreEl.textContent=u?(Number(u.creditScore)||100):100;updateHeaderAuth();document.getElementById('balance').textContent=fmt(demoBalance);updateProfileNotificationBadge()}function copyUserId(){const id=document.getElementById('profileId').textContent;if(id==='Not logged in'){toast('Log in to view your demo ID.');return}navigator.clipboard?.writeText(id).then(()=>toast('User ID copied')).catch(()=>toast('Your User ID is '+id))}function logout(){currentUser='';localStorage.removeItem('dc_user');demoBalance=0;activeCycle=null;tradeHistory=[];notifications=['Practice account: prices and trading results are simulated.'];updateProfile();updateHeaderAuth();toast('Signed out.');showPage('home')}function updateBalance(){localStorage.setItem(scopedStorageKey('dc_demo_balance'),String(demoBalance));updateProfile();const ab=document.getElementById('assetsBalance');if(ab)ab.textContent=fmt(demoBalance)}
+function updateProfile(){const users=readJSON('dc_users',{}),u=users[currentUser];document.getElementById('profileName').textContent=currentUser||'Guest';document.getElementById('profileId').textContent=u?u.demoId:'Not logged in';const scoreEl=document.getElementById('creditScoreValue');if(scoreEl)scoreEl.textContent=u?(Number(u.creditScore)||100):100;updateHeaderAuth();document.getElementById('balance').textContent=fmt(demoBalance);updateProfileNotificationBadge()}function copyUserId(){const id=document.getElementById('profileId').textContent;if(id==='Not logged in'){toast('Log in to view your demo ID.');return}navigator.clipboard?.writeText(id).then(()=>toast('User ID copied')).catch(()=>toast('Your User ID is '+id))}function logout(){currentUser='';localStorage.removeItem('dc_user');demoBalance=0;activeCycle=null;tradeHistory=[];notifications=['Practice account: prices and trading results are simulated.'];updateProfile();updateHeaderAuth();toast('Signed out.');showPage('home')}function updateBalance(){localStorage.setItem(scopedStorageKey('dc_demo_balance'),String(demoBalance));updateProfile();const ab=document.getElementById('assetsBalance');if(ab)ab.textContent=fmt(demoBalance)}
 function rechargeDemo(){if(!currentUser){toast('Please log in first.');showPage('login');return}const input=document.getElementById('rechargeAmount'),a=Number(input.value),out=document.getElementById('rechargeResult');if(a<=0||!Number.isFinite(a)){out.textContent='Please enter a valid amount.';return}const note='Recharge request for '+fmt(a)+' submitted. Please contact Customer Care. No payment was processed and no balance was added.';notifications.unshift(note);save('dc_notifications',notifications);out.textContent='Please contact Customer Care.';input.value='';toast('Please contact Customer Care.');renderService()}function openWithdraw(){if(!currentUser){toast('Please register or log in first.');showPage('login');return}notifications.unshift('Before withdrawing: this demo does not transfer funds.');save('dc_notifications',notifications);showPage('withdraw')}function processWithdrawalTimeouts(){let reqs=readJSON('dc_withdrawals',[]),changed=false;const now=Date.now();reqs=reqs.map(r=>{if(r.status==='Pending (practice only)'&&r.submittedAt&&now-r.submittedAt>=20*60*1000){r.status='Rejected';r.reason='Please Contact Customer Care';r.updatedAt=new Date().toISOString();notifications.unshift('Withdrawal request rejected. Reason: Please Contact Customer Care.');changed=true;}return r;});if(changed){save('dc_withdrawals',reqs);save('dc_notifications',notifications);}}
 function submitWithdraw(){if(!currentUser){toast('Please log in first.');showPage('login');return}processWithdrawalTimeouts();const holder=document.getElementById('holder').value.trim(),bank=document.getElementById('bankName').value.trim(),acc=document.getElementById('bankAccount').value.trim(),ifsc=document.getElementById('ifsc').value.trim().toUpperCase(),amount=Number(document.getElementById('withdrawAmount').value),out=document.getElementById('withdrawResult');if(!holder||!bank||!acc||!ifsc||!amount||amount<=0){out.textContent='Please complete all fields with practice-only details and a valid amount.';return}if(!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)){out.textContent='IFSC format looks invalid. Use practice details only.';return}if(amount>demoBalance){out.textContent='Insufficient practice balance.';return}const req={holder,bank,accountLast4:acc.slice(-4),ifsc,amount,status:'Pending (practice only)',time:new Date().toLocaleString(),submittedAt:Date.now(),reason:''};let reqs=readJSON('dc_withdrawals',[]);reqs.unshift(req);save('dc_withdrawals',reqs);demoBalance-=amount;localStorage.setItem(scopedStorageKey('dc_demo_balance'),String(demoBalance));if(typeof updateProfile==='function')updateProfile();out.textContent='Withdrawal request submitted. Status: Pending. If it remains pending for 20 minutes, it will be marked Rejected. Reason: Please Contact Customer Care. Practice only; no money was transferred.';notifications.unshift('Withdrawal request submitted for '+fmt(amount)+'. Status: Pending.');save('dc_notifications',notifications);document.getElementById('withdrawAmount').value='';toast('Withdrawal request submitted.');}
 function renderService(){renderTradeHistory();const list=document.getElementById('historyList');list.innerHTML=tradeHistory.length?tradeHistory.map(o=>`<div class="history-row"><div><b>${escapeHTML(o.pair)} · ${escapeHTML(o.direction)}</b><div class="notice">Started ${escapeHTML(o.time)} · Duration ${o.duration}s · ${escapeHTML(o.status||'Demo')}</div><div class="notice">Amount ${fmt(o.amount)}${o.completedAt?' · Completed '+new Date(o.completedAt).toLocaleString():''}</div></div><div style="text-align:right"><b class="${o.settled?'profit-text':''}">${o.settled?'+'+fmt(o.profit||0):'Pending'}</b><div class="notice">${o.settled?'Profit':'In progress'}</div></div></div>`).join(''):'<div class="empty">No practice trades yet.</div>';document.getElementById('notifications').innerHTML=notifications.slice(0,12).map(n=>`<div class="history-row">${noticeText(n)}</div>`).join('')}function clearHistory(){tradeHistory=[];save('dc_history',tradeHistory);renderService()}function submitSupport(){if(!currentUser){toast('Log in to submit a demo support request.');showPage('login');return}const topic=document.getElementById('supportTopic').value,msg=document.getElementById('supportMessage').value.trim();if(!msg){toast('Enter a message first.');return}notifications.unshift('Support request received (demo): '+topic);save('dc_notifications',notifications);document.getElementById('supportResult').textContent='Demo support request recorded. No live customer-care agent is connected.';document.getElementById('supportMessage').value='';renderService()}function changePassword(){if(!currentUser){toast('Log in first.');showPage('login');return}let users=readJSON('dc_users',{}),old=document.getElementById('oldPassword').value,nw=document.getElementById('newPassword').value;if(users[currentUser]?.password!==old||nw.length<4){toast('Check current password and enter a new password of at least 4 characters.');return}users[currentUser].password=nw;save('dc_users',users);toast('Demo password updated.')}function escapeHTML(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -842,30 +831,6 @@ function managerLogout(){managerSession=false;managerLoginMode=false;currentUser
 function managerUserBalance(name){return Number(localStorage.getItem('user:'+encodeURIComponent(name)+':dc_demo_balance')||0);}
 async function renderManager(){
  if(!managerSession)return;
- // Pull shared registration metadata into the manager's display cache. This does not
- // import passwords or grant client-side database write privileges.
- if(window.cryptoTradeSupabase && !window.__ctManagerSyncBusy){
-   window.__ctManagerSyncBusy=true;
-   try{
-     const {data: sharedRows, error: sharedErr}=await window.cryptoTradeSupabase
-       .from('registrations').select('user_id,username,invite_code,registered_at').order('registered_at',{ascending:false});
-     if(!sharedErr && Array.isArray(sharedRows)){
-       const sharedUsers=managerUsers();
-       for(const row of sharedRows){
-         if(!row || !row.username) continue;
-         const existingKey=Object.keys(sharedUsers).find(k=>k.toLowerCase()===String(row.username).toLowerCase());
-         const key=existingKey||String(row.username);
-         const rawId=row.user_id;
-         const numericId=Number(rawId);
-         sharedUsers[key]={...(sharedUsers[key]||{}), demoId:Number.isFinite(numericId)&&numericId>0?numericId:(sharedUsers[key]?.demoId||'—'), status:sharedUsers[key]?.status||'Active', creditScore:sharedUsers[key]?.creditScore||100, registeredAt:row.registered_at||sharedUsers[key]?.registeredAt||null, inviteCode:row.invite_code||sharedUsers[key]?.inviteCode||'' , sharedRegistration:true};
-       }
-       localStorage.setItem('dc_users',JSON.stringify(sharedUsers));
-     } else if(sharedErr) {
-       console.warn('Could not load shared registrations for Manager Panel:',sharedErr.message);
-     }
-   }catch(syncErr){console.warn('Manager registration sync failed:',syncErr)}
-   finally{window.__ctManagerSyncBusy=false;}
- }
  const users=managerUsers(),names=Object.keys(users),frozen=names.filter(n=>users[n].status==='Frozen').length;
  const localDay=d=>{if(!d||isNaN(d))return '';return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
  const todayKey=localDay(new Date());
@@ -1031,7 +996,7 @@ async function submitAuth(){
  if(!isRegister&&account.toLowerCase()===MANAGER_USERNAME.toLowerCase()&&password===MANAGER_PASSWORD){managerSession=true;currentUser='';localStorage.removeItem('dc_user');msg.textContent='';showPage('manager');return;}
  if(isRegister&&account.toLowerCase()===MANAGER_USERNAME.toLowerCase()){msg.textContent='This account name is reserved.';return;}
  if(isRegister){
-  if(password.length<4){msg.textContent='Use at least 4 characters for your password.';return;}
+  if(password.length<4){msg.textContent='Use at least 8 characters for your password.';return;}
   if(password!==document.getElementById('confirmPassword').value){msg.textContent='Passwords do not match.';return;}
   if(Object.keys(users).some(n=>n.toLowerCase()===account.toLowerCase())){msg.textContent='Account ID / username already exists.';return;}
   const inviteCode=(document.getElementById('inviteCodeInput')?.value||'').trim().toUpperCase();let invitedBy='';
@@ -1299,6 +1264,40 @@ window.addEventListener('storage',function(e){
 <!-- SECURITY NOTE: existing demo user sign-in and Manager Panel still use browser localStorage.
      This file syncs registration metadata only. Do not use for real funds or sensitive data.
      Secure Manager-only viewing requires Supabase Auth + RLS/server-side authorization. -->
+
+<script>
+// Shared CryptoTrade API: served from the same Render service as this page.
+async function ctApi(path, options={}){
+ const headers={'Content-Type':'application/json',...(options.headers||{})};
+ const token=path.startsWith('/api/manager')?localStorage.getItem('ct_manager_token'):localStorage.getItem('ct_user_token');
+ if(token)headers.Authorization='Bearer '+token;
+ const response=await fetch(path,{...options,headers});let data={};try{data=await response.json()}catch{}
+ if(!response.ok)throw new Error(data.error||'Server request failed.');return data;
+}
+async function ctSyncManagerData(){
+ const data=await ctApi('/api/manager/overview');const users={};
+ for(const u of data.users){users[u.username]={...(users[u.username]||{}),demoId:u.id,status:u.status,creditScore:u.creditScore,registeredAt:u.registeredAt,inviteCode:u.inviteCode,invitedBy:u.invitedBy,sharedRegistration:true};localStorage.setItem('user:'+encodeURIComponent(u.username)+':dc_demo_balance',String(u.demoBalance));}
+ localStorage.setItem('dc_users',JSON.stringify(users));localStorage.setItem('dc_manager_events',JSON.stringify(data.events));window.__ctServerEvents=data.events;return data;
+}
+// Wrap manager operations so changes are written to the shared database, not just this phone.
+(function(){
+ const oldRenderManager=window.renderManager;
+ window.renderManager=async function(){if(!managerSession)return;try{await ctSyncManagerData();}catch(e){console.error(e);const f=document.getElementById('managerNewUserFeed');if(f)f.innerHTML='<div class="notice">Could not connect to shared manager database. Please sign in again or refresh.</div>';if(e.message==='Please sign in again.'){managerSession=false;showPage('login');toast('Manager session expired. Please sign in again.');return;}}return oldRenderManager.apply(this,arguments);};
+ const oldSetStatus=window.managerSetStatus;
+ window.managerSetStatus=async function(encoded,status){const name=decodeURIComponent(encoded),u=managerUsers()[name];if(!managerSession||!u)return;try{await ctApi('/api/manager/users/'+Number(u.demoId),{method:'PATCH',body:JSON.stringify({status})});return oldSetStatus.apply(this,arguments);}catch(e){toast(e.message);}};
+ const oldAdjust=window.managerAdjustBalance;
+ window.managerAdjustBalance=async function(encoded){const name=decodeURIComponent(encoded),u=managerUsers()[name],field=document.getElementById('managerBalanceAmount'),amount=Number(field?.value);if(!managerSession||!u)return;const old=Number(localStorage.getItem('user:'+encodeURIComponent(name)+':dc_demo_balance')||0);const next=old+amount;if(!Number.isFinite(amount)||amount<=0||next<0){return oldAdjust.apply(this,arguments);}try{await ctApi('/api/manager/users/'+Number(u.demoId),{method:'PATCH',body:JSON.stringify({demoBalance:next})});return oldAdjust.apply(this,arguments);}catch(e){toast(e.message);}};
+ const oldScore=window.managerSetScore;
+ window.managerSetScore=async function(encoded){const name=decodeURIComponent(encoded),u=managerUsers()[name],score=Number(document.getElementById('managerCreditScore')?.value);if(!managerSession||!u)return;try{await ctApi('/api/manager/users/'+Number(u.demoId),{method:'PATCH',body:JSON.stringify({creditScore:score})});return oldScore.apply(this,arguments);}catch(e){toast(e.message);}};
+ const oldInvite=window.managerEditInvite;
+ window.managerEditInvite=async function(encoded){const name=decodeURIComponent(encoded),u=managerUsers()[name],inviteCode=(document.getElementById('managerInviteEdit')?.value||'').trim().toUpperCase();if(!managerSession||!u)return;try{await ctApi('/api/manager/users/'+Number(u.demoId),{method:'PATCH',body:JSON.stringify({inviteCode})});return oldInvite.apply(this,arguments);}catch(e){toast(e.message);}};
+ const oldLogout=window.managerLogout;
+ window.managerLogout=function(){localStorage.removeItem('ct_manager_token');return oldLogout.apply(this,arguments);};
+ // Refresh the one shared registration feed while the manager panel is open.
+ setInterval(()=>{if(managerSession&&document.getElementById('manager')?.classList.contains('active'))window.renderManager();},10000);
+})();
+</script>
+
 </body></html>
 <style>
 /* User-requested refinements: animated market signals, tiny notification dot, compact copy control */

@@ -1,0 +1,20 @@
+{
+  "name": "cryptotrade-shared-manager",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CryptoTrade demo practice site with shared PostgreSQL user registration and manager panel",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "make-manager-hash": "node make-manager-hash.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.13.1"
+  }
+}
