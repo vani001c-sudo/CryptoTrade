@@ -1,216 +1,183 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CryptoTrade</title>
-<style>
-*{box-sizing:border-box}
-body{margin:0;background:#080d18;color:#f4f6ff;font-family:Arial,sans-serif}
-header{padding:22px;text-align:center;background:#111b30;border-bottom:1px solid #263957}
-h1{margin:0;color:#e8c77a}
-main{max-width:520px;margin:25px auto;padding:16px}
-.panel{background:#111b30;border:1px solid #293b58;border-radius:14px;padding:20px;margin-bottom:18px}
-h2{margin-top:0}
-input,button,textarea{width:100%;padding:13px;margin:7px 0;border-radius:8px;font-size:15px}
-input,textarea{background:#080d18;color:white;border:1px solid #354967}
-button{background:#e8c77a;color:#111827;border:0;font-weight:bold;cursor:pointer}
-.secondary{background:#263957;color:white}
-.item{padding:12px 0;border-bottom:1px solid #293b58;overflow-wrap:anywhere}
-.small{color:#aebbd0;font-size:13px}
-.hidden{display:none}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CryptoTrade Login</title>
+  <style>
+    :root {
+      --bg: #080d16;
+      --header: #0d1522;
+      --panel: #101a29;
+      --line: #26364a;
+      --green: #2ad6a0;
+      --red: #ff647c;
+      --muted: #9aabc2;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, sans-serif;
+      color: #fff;
+      background:
+        radial-gradient(ellipse at top, #17344b 0%, transparent 55%),
+        var(--bg);
+    }
+    .panel {
+      width: 100%;
+      max-width: 410px;
+      padding: 28px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--panel);
+      box-shadow: 0 18px 55px #0005;
+    }
+    h1 { margin: 0 0 8px; font-size: 27px; }
+    p { color: var(--muted); line-height: 1.5; }
+    label { display: block; margin: 17px 0 7px; }
+    input {
+      width: 100%;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--bg);
+      color: white;
+      font-size: 16px;
+    }
+    button {
+      width: 100%;
+      margin-top: 20px;
+      padding: 14px;
+      border: 0;
+      border-radius: 9px;
+      background: var(--green);
+      color: #07130f;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    #message { overflow-wrap: anywhere; }
+    .hidden { display: none; }
+  </style>
 </head>
 <body>
-<header>
-<h1>CryptoTrade</h1>
-<p class="small">Demo Trading Platform</p>
-</header>
-<main>
-<div class="panel" id="auth">
-<h2>Create Account</h2>
-<input id="regUser" placeholder="Choose username">
-<input id="regPass" type="password" placeholder="Choose password (8+ characters)">
-<input id="invite" placeholder="Invite code (optional)">
-<button onclick="register()">Register</button>
-<hr>
-<h2>User Login</h2>
-<input id="loginUser" placeholder="Username">
-<input id="loginPass" type="password" placeholder="Password">
-<button onclick="login()">Login</button>
-<hr>
-<h2>Manager Login</h2>
-<input id="managerUser" placeholder="Manager username">
-<input id="managerPass" type="password" placeholder="Manager password">
-<button onclick="managerLogin()">Manager Login</button>
-<p class="small">Use your configured manager credentials.</p>
-</div>
+  <main class="panel">
+    <h1>CryptoTrade</h1>
+    <p>Sign in to your account</p>
 
-<div class="panel hidden" id="userPanel">
-<h2>My Account</h2>
-<div id="userInfo"></div>
-<button class="secondary" onclick="logout()">Logout</button>
-</div>
+    <form id="loginForm">
+      <label for="username">Username / Account</label>
+      <input id="username" name="username"
+        autocomplete="username" required>
 
-<div class="panel hidden" id="managerPanel">
-<h2>Manager Dashboard</h2>
-<button onclick="loadUsers()">Refresh Users</button>
-<div id="users"></div>
-<button class="secondary" onclick="logout()">Logout</button>
-</div>
-<p id="message" role="status"></p>
-</main>
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password"
+        autocomplete="current-password" required>
 
-<script>
-let token = "";
-let role = "";
+      <button id="loginButton" type="submit">Login</button>
+    </form>
 
-async function api(url, method="GET", body=null) {
-  const options = {
-    method,
-    headers: {"Content-Type":"application/json"}
-  };
-  if (token) options.headers.Authorization = "Bearer " + token;
-  if (body) options.body = JSON.stringify(body);
+    <p id="message" role="status"></p>
 
-  const response = await fetch(url, options);
-  const data = await response.json().catch(()=>({}));
-  if (!response.ok) throw new Error(data.error || "Request failed");
-  return data;
-}
+    <section id="dashboard" class="hidden">
+      <h2 id="welcome"></h2>
+      <p id="accountType"></p>
+      <button type="button" id="logoutButton">Logout</button>
+    </section>
+  </main>
 
-function say(text) {
-  document.getElementById("message").textContent = text;
-}
+  <script>
+    const API_BASE = "https://cryptotrade-md9y.onrender.com";
 
-function showPanel(panel) {
-  ["auth","userPanel","managerPanel"].forEach(id =>
-    document.getElementById(id).classList.add("hidden")
-  );
-  document.getElementById(panel).classList.remove("hidden");
-}
+    const form = document.getElementById("loginForm");
+    const message = document.getElementById("message");
+    const button = document.getElementById("loginButton");
+    const dashboard = document.getElementById("dashboard");
 
-async function register() {
-  try {
-    const data = await api("/api/register","POST",{
-      username: document.getElementById("regUser").value,
-      password: document.getElementById("regPass").value,
-      inviteCode: document.getElementById("invite").value
+    form.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      message.textContent = "Checking login...";
+      button.disabled = true;
+
+      const username =
+        document.getElementById("username").value.trim();
+      const password =
+        document.getElementById("password").value;
+
+      try {
+        // Try normal user login first.
+        let response = await fetch(API_BASE + "/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password })
+        });
+
+        let data = await response.json();
+
+        // If user login fails, ask the server to validate manager login.
+        if (!response.ok) {
+          response = await fetch(
+            API_BASE + "/api/manager/login",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ username, password })
+            }
+          );
+          data = await response.json();
+        }
+
+        if (!response.ok) {
+          throw new Error(data.message || data.error ||
+            "Invalid username or password.");
+        }
+
+        // Only use the role returned by the authenticated server.
+        const role = String(
+          data.role || data.user?.role || data.account?.role || ""
+        ).toLowerCase();
+
+        if (role !== "manager" && role !== "user") {
+          throw new Error(
+            "Login response does not identify the account role. API format must be checked."
+          );
+        }
+
+        form.classList.add("hidden");
+        dashboard.classList.remove("hidden");
+
+        document.getElementById("welcome").textContent =
+          "Welcome, " + username;
+        document.getElementById("accountType").textContent =
+          role === "manager"
+            ? "Manager account authenticated."
+            : "User account authenticated.";
+
+        message.textContent = "";
+
+        // Connect the relevant existing dashboard here.
+        // This sample does not include your original site features.
+      } catch (error) {
+        message.textContent =
+          error.message || "Unable to connect. Please try again.";
+      } finally {
+        button.disabled = false;
+      }
     });
-    say("Registration successful. Your User ID: " + data.user.id +
-        ". Please log in.");
-    document.getElementById("loginUser").value =
-      document.getElementById("regUser").value;
-  } catch(e) { say(e.message); }
-}
 
-async function login() {
-  try {
-    const data = await api("/api/login","POST",{
-      username: document.getElementById("loginUser").value,
-      password: document.getElementById("loginPass").value
-    });
-    token = data.token;
-    role = "user";
-    const u = data.user;
-    document.getElementById("userInfo").innerHTML =
-      "<div class='item'>Username: " + escapeHTML(u.username) + "</div>" +
-      "<div class='item'>User ID: " + u.id + "</div>" +
-      "<div class='item'>Status: " + escapeHTML(u.status) + "</div>" +
-      "<div class='item'>Demo Balance: ₹" + Number(u.demoBalance).toFixed(2) + "</div>" +
-      "<div class='item'>Credit Score: " + u.creditScore + "</div>" +
-      "<div class='item'>Invite Code: " + escapeHTML(u.inviteCode) + "</div>";
-    showPanel("userPanel");
-    say("Login successful.");
-  } catch(e) { say(e.message); }
-}
-
-async function managerLogin() {
-  try {
-    const data = await api("/api/manager/login","POST",{
-      username: document.getElementById("managerUser").value,
-      password: document.getElementById("managerPass").value
-    });
-    token = data.token;
-    role = "manager";
-    showPanel("managerPanel");
-    say("Manager login successful.");
-    await loadUsers();
-  } catch(e) { say(e.message); }
-}
-
-async function loadUsers() {
-  try {
-    const data = await api("/api/manager/overview");
-    const root = document.getElementById("users");
-    root.replaceChildren();
-
-    if (!data.users.length) {
-      root.textContent = "No registered users yet.";
-      return;
-    }
-
-    data.users.forEach(u => {
-      const box = document.createElement("div");
-      box.className = "item";
-      box.innerHTML =
-        "<b>" + escapeHTML(u.username) + "</b>" +
-        "<p>User ID: " + u.id + "</p>" +
-        "<p>Status: " + escapeHTML(u.status) + "</p>" +
-        "<p>Demo Balance: ₹" + Number(u.demoBalance).toFixed(2) + "</p>" +
-        "<p>Credit Score: " + u.creditScore + "</p>" +
-        "<label>Demo balance</label>" +
-        "<input type='number' min='0' step='0.01' id='bal" + u.id + "' value='" + Number(u.demoBalance) + "'>" +
-        "<label>Credit score (0–1000)</label>" +
-        "<input type='number' min='0' max='1000' step='1' id='score" + u.id + "' value='" + u.creditScore + "'>" +
-        "<label>Status</label>" +
-        "<select id='status" + u.id + "'>" +
-        ["Active","Frozen","Inactive"].map(s =>
-          "<option " + (s===u.status?"selected":"") + ">" + s + "</option>"
-        ).join("") +
-        "</select>" +
-        "<button class='save'>Save User</button>" +
-        "<textarea id='note" + u.id + "' placeholder='Demo notification message'></textarea>" +
-        "<button class='notify secondary'>Save Notification</button>";
-
-      box.querySelector(".save").onclick = async () => {
-        try {
-          await api("/api/manager/users/" + u.id,"PATCH",{
-            demoBalance: Number(document.getElementById("bal"+u.id).value),
-            creditScore: Number(document.getElementById("score"+u.id).value),
-            status: document.getElementById("status"+u.id).value
-          });
-          say("User updated.");
-          await loadUsers();
-        } catch(e) { say(e.message); }
-      };
-
-      box.querySelector(".notify").onclick = async () => {
-        try {
-          const message = document.getElementById("note"+u.id).value.trim();
-          if (!message) return say("Enter a notification first.");
-          await api("/api/manager/users/" + u.id + "/notify","POST",{message});
-          say("Notification saved in the manager event log.");
-        } catch(e) { say(e.message); }
-      };
-
-      root.appendChild(box);
-    });
-  } catch(e) { say(e.message); }
-}
-
-function escapeHTML(value) {
-  return String(value ?? "").replace(/[&<>"']/g, c => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  })[c]);
-}
-
-function logout() {
-  token = "";
-  role = "";
-  showPanel("auth");
-  say("Logged out.");
-}
-</script>
+    document.getElementById("logoutButton")
+      .addEventListener("click", function () {
+        dashboard.classList.add("hidden");
+        form.classList.remove("hidden");
+        form.reset();
+        message.textContent = "";
+      });
+  </script>
 </body>
-  </html>
+</html>
